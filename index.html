@@ -102,6 +102,101 @@
             color: #065f46;
         }
 
+        /* ========== 模式切换 ========== */
+        .mode-section {
+            margin-top: 12px;
+        }
+
+        .mode-tabs {
+            display: flex;
+            background: var(--gray-100);
+            border-radius: 10px;
+            padding: 3px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-500);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mode-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .mode-desc {
+            text-align: center;
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-top: 8px;
+        }
+
+        .size-slider-wrap {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .size-slider-wrap.show {
+            display: block;
+        }
+
+        .size-slider-wrap label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .size-slider-wrap label strong {
+            color: var(--primary);
+        }
+
+        .size-slider-wrap input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--gray-200);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .size-slider-wrap input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .size-slider-wrap input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
         /* ========== 上传区 ========== */
         .upload-section {
             margin-top: 12px;
@@ -604,6 +699,19 @@
             <span class="status-badge free" id="statusBadge"></span>
         </div>
 
+        <!-- 模式切换 -->
+        <section class="mode-section">
+            <div class="mode-tabs">
+                <button class="mode-tab active" id="tabExam" data-mode="exam">考公模式</button>
+                <button class="mode-tab" id="tabGeneral" data-mode="general">通用模式</button>
+            </div>
+            <p class="mode-desc" id="modeDesc">输出 300×420 px · ≤15KB</p>
+            <div class="size-slider-wrap show" id="sizeSliderWrap">
+                <label>目标大小：<strong><span id="sizeValue">15</span> KB</strong></label>
+                <input type="range" id="sizeSlider" min="10" max="30" value="15" step="1">
+            </div>
+        </section>
+
         <!-- 上传区 -->
         <section class="upload-section">
             <div class="upload-area" id="uploadArea">
@@ -637,12 +745,12 @@
                     <img class="preview-img" id="compressedPreview" alt="压缩后预览">
                     <div class="info">
                         <div><span class="size" id="compressedSize"></span></div>
-                        <div>413 × 626 px</div>
+                        <div id="compressedDimensions">300 × 420 px</div>
                     </div>
                     <div class="reduction-badge" id="reductionBadge"></div>
                 </div>
             </div>
-            <div class="warning-msg" id="oversizeWarning">⚠️ 已尽力压缩，但文件仍超过 200KB，建议更换更小的原图</div>
+            <div class="warning-msg" id="oversizeWarning"></div>
             <div class="download-area">
                 <button class="btn btn-success btn-block" id="downloadBtn">⬇ 下载压缩后的照片</button>
             </div>
@@ -665,7 +773,7 @@
 
         <!-- 底部说明 -->
         <footer class="footer">
-            <p>上传照片后自动压缩为 413×626 像素、≤200KB 的 JPG 格式</p>
+            <p id="footerDesc">上传照片后自动压缩为 300×420 像素、≤15KB 的 JPG 格式</p>
             <div class="divider"></div>
             <p>🔒 所有处理均在本地浏览器完成，照片不会上传到任何服务器</p>
             <p style="margin-top:8px;">© 2024 小像压缩</p>
@@ -696,11 +804,25 @@
     (function () {
         'use strict';
 
-        /** 目标输出尺寸 */
-        const TARGET_W = 413;
-        const TARGET_H = 626;
-        const TARGET_SIZE_KB = 200;
+        /** 模式配置 */
+        const MODES = {
+            exam:    { w: 300, h: 420, sizeKB: 15, label: '考公模式' },
+            general: { w: 413, h: 626, sizeKB: 200, label: '通用模式' }
+        };
+        var currentMode = 'exam';
         const FREE_DAILY_LIMIT = 3;
+
+        /**
+         * 获取当前模式的参数（考公模式下 sizeKB 读滑块值）
+         * @returns {{w: number, h: number, sizeKB: number}}
+         */
+        function getConfig() {
+            var cfg = MODES[currentMode];
+            if (currentMode === 'exam') {
+                return { w: cfg.w, h: cfg.h, sizeKB: parseInt(sizeSlider.value, 10) };
+            }
+            return { w: cfg.w, h: cfg.h, sizeKB: cfg.sizeKB };
+        }
         const VALID_HASHES = [
             '6adae59b9082f47979ebd896233b8cd570bdac42ff0c5b995a76a7f0796bc18b',
             '0a5474ee976e1cb15dc8fd94ded5ea9f36b9a051d6e4bc5de443c39529f9d6a0',
@@ -749,6 +871,14 @@
         const modalError = $('modalError');
         const activateBtn = $('activateBtn');
         const toastEl = $('toast');
+        const tabExam = $('tabExam');
+        const tabGeneral = $('tabGeneral');
+        const modeDesc = $('modeDesc');
+        const sizeSliderWrap = $('sizeSliderWrap');
+        const sizeSlider = $('sizeSlider');
+        const sizeValue = $('sizeValue');
+        const compressedDimensions = $('compressedDimensions');
+        const footerDesc = $('footerDesc');
 
         /** 缓存当前压缩结果的 Object URL，切换时需释放 */
         let currentBlobUrl = null;
@@ -898,9 +1028,10 @@
          * 居中裁剪并绘制到 Canvas（cover 模式）
          * @param {HTMLImageElement} img 已加载的图片元素
          * @param {HTMLCanvasElement} canvas 目标 Canvas
+         * @param {{w: number, h: number}} cfg 目标尺寸
          */
-        function drawCropped(img, canvas) {
-            const targetRatio = TARGET_W / TARGET_H;
+        function drawCropped(img, canvas, cfg) {
+            const targetRatio = cfg.w / cfg.h;
             const imgRatio = img.naturalWidth / img.naturalHeight;
 
             var sx, sy, sw, sh;
@@ -916,13 +1047,13 @@
                 sy = (img.naturalHeight - sh) / 2;
             }
 
-            canvas.width = TARGET_W;
-            canvas.height = TARGET_H;
+            canvas.width = cfg.w;
+            canvas.height = cfg.h;
             var ctx = canvas.getContext('2d');
             /* PNG 透明区域转白底 */
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, TARGET_W, TARGET_H);
-            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+            ctx.fillRect(0, 0, cfg.w, cfg.h);
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cfg.w, cfg.h);
         }
 
         /**
@@ -956,11 +1087,10 @@
         /**
          * 二分查找最优 JPEG 质量，使输出 ≤ targetSizeKB 且质量尽可能高
          * @param {HTMLCanvasElement} canvas
-         * @param {number} [targetSizeKB=200]
+         * @param {number} targetSizeKB 目标文件大小上限
          * @returns {Promise<{blob: Blob, oversize: boolean}>}
          */
         async function findOptimalQuality(canvas, targetSizeKB) {
-            targetSizeKB = targetSizeKB || TARGET_SIZE_KB;
             var minQ = 0.1, maxQ = 1.0;
             var bestBlob = null;
 
@@ -993,16 +1123,17 @@
             loadingSection.classList.add('show');
 
             try {
+                var cfg = getConfig();
                 var img = await loadImage(file);
 
                 var canvas = document.createElement('canvas');
-                drawCropped(img, canvas);
+                drawCropped(img, canvas, cfg);
 
                 if (!isPaid()) {
                     addWatermark(canvas);
                 }
 
-                var result = await findOptimalQuality(canvas);
+                var result = await findOptimalQuality(canvas, cfg.sizeKB);
 
                 /* 更新原图预览 */
                 currentOriginalUrl = URL.createObjectURL(file);
@@ -1015,6 +1146,7 @@
                 currentBlobUrl = URL.createObjectURL(result.blob);
                 compressedPreview.src = currentBlobUrl;
                 compressedSize.textContent = formatSize(result.blob.size);
+                compressedDimensions.textContent = cfg.w + ' × ' + cfg.h + ' px';
 
                 /* 压缩率 */
                 var reduced = Math.round((1 - result.blob.size / file.size) * 100);
@@ -1022,6 +1154,7 @@
 
                 /* 超标警告 */
                 if (result.oversize) {
+                    oversizeWarning.textContent = '⚠️ 已尽力压缩，但文件仍超过 ' + cfg.sizeKB + 'KB，建议更换更小的原图';
                     oversizeWarning.classList.add('show');
                 } else {
                     oversizeWarning.classList.remove('show');
@@ -1096,6 +1229,33 @@
             compressImage(file);
         }
 
+        /* ========== 模式切换 ========== */
+
+        /** 刷新模式相关 UI（描述文字、滑块、底部说明） */
+        function updateModeUI() {
+            var cfg = getConfig();
+            tabExam.classList.toggle('active', currentMode === 'exam');
+            tabGeneral.classList.toggle('active', currentMode === 'general');
+            sizeSliderWrap.classList.toggle('show', currentMode === 'exam');
+            modeDesc.textContent = '输出 ' + cfg.w + '×' + cfg.h + ' px · ≤' + cfg.sizeKB + 'KB';
+            footerDesc.textContent = '上传照片后自动压缩为 ' + cfg.w + '×' + cfg.h + ' 像素、≤' + cfg.sizeKB + 'KB 的 JPG 格式';
+        }
+
+        tabExam.addEventListener('click', function () {
+            currentMode = 'exam';
+            updateModeUI();
+        });
+
+        tabGeneral.addEventListener('click', function () {
+            currentMode = 'general';
+            updateModeUI();
+        });
+
+        sizeSlider.addEventListener('input', function () {
+            sizeValue.textContent = sizeSlider.value;
+            updateModeUI();
+        });
+
         /* ========== 事件绑定 ========== */
 
         fileInput.addEventListener('change', function (e) {
@@ -1164,6 +1324,7 @@
         /* ========== 初始化 ========== */
         updateStatusBar();
         updatePaymentSection();
+        updateModeUI();
 
         /**
          * 复制微信号到剪贴板（挂到 window 供 onclick 调用）
