@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="小像压缩 - 报名照片在线压缩工具，一键压缩到200KB以下，413×626像素，本地处理不上传">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="format-detection" content="telephone=no">
+    <title>小像压缩 - 报名照片专用</title>
+    <style>
+        /* ========== 基础重置与变量 ========== */
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-light: #dbeafe;
+            --primary-bg: #eff6ff;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --error: #ef4444;
+            --error-bg: #fef2f2;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-500: #64748b;
+            --gray-700: #334155;
+            --gray-900: #0f172a;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                         'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--primary-bg) 0%, var(--gray-50) 100%);
+            color: var(--gray-900);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ========== 布局容器 ========== */
+        .app {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+        }
+
+        /* ========== 头部 ========== */
+        .header {
+            text-align: center;
+            padding: 24px 0 8px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+            letter-spacing: -0.5px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        /* ========== 状态栏 ========== */
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-badge.free {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .status-badge.paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* ========== 上传区 ========== */
+        .upload-section {
+            margin-top: 12px;
+        }
+
+        .upload-area {
+            position: relative;
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--radius);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: var(--primary-bg);
+        }
+
+        .upload-area .upload-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .upload-area .upload-text {
+            font-size: 15px;
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .upload-area .upload-hint {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* ========== 加载状态 ========== */
+        .loading-section {
+            display: none;
+            text-align: center;
+            padding: 32px 0;
+        }
+
+        .loading-section.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-section .loading-text {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        /* ========== 结果区 ========== */
+        .result-section {
+            display: none;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .comparison {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: white;
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .compare-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .compare-item .compare-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .compare-item .preview-img {
+            width: 100%;
+            max-width: 180px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+            object-fit: contain;
+            background: var(--gray-100);
+        }
+
+        .compare-item .info {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--gray-500);
+            line-height: 1.8;
+        }
+
+        .compare-item .info .size {
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .compare-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--primary);
+            padding: 4px 0;
+        }
+
+        /* 移动端纵向排列时箭头朝下 */
+        .compare-arrow .arrow-down { display: inline; }
+        .compare-arrow .arrow-right { display: none; }
+
+        .reduction-badge {
+            display: inline-block;
+            background: #d1fae5;
+            color: #065f46;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 10px;
+            margin-top: 6px;
+        }
+
+        /* ========== 警告提示 ========== */
+        .warning-msg {
+            display: none;
+            background: var(--warning-bg);
+            color: #92400e;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .warning-msg.show {
+            display: block;
+        }
+
+        /* ========== 按钮 ========== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: var(--success-hover);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .download-area {
+            margin-top: 16px;
+        }
+
+        /* ========== 付费引导区 ========== */
+        .payment-section {
+            margin-top: 24px;
+        }
+
+        .payment-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-top: 3px solid var(--primary);
+        }
+
+        .payment-card h3 {
+            font-size: 17px;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+        }
+
+        .payment-card .features {
+            list-style: none;
+            text-align: left;
+            max-width: 220px;
+            margin: 0 auto 16px;
+        }
+
+        .payment-card .features li {
+            padding: 4px 0;
+            font-size: 14px;
+            color: var(--gray-700);
+        }
+
+        .payment-card .features li::before {
+            content: "✓ ";
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .payment-card .price {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .payment-card .price-hint {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 16px;
+        }
+
+        .payment-card .paid-text {
+            color: var(--success);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* ========== 底部 ========== */
+        .footer {
+            margin-top: 32px;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--gray-500);
+            line-height: 1.8;
+        }
+
+        .footer .divider {
+            width: 40px;
+            height: 1px;
+            background: var(--gray-200);
+            margin: 12px auto;
+        }
+
+        /* ========== 弹窗 ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: fadeInOverlay 0.2s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeInOverlay {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 50%;
+            font-size: 18px;
+            color: var(--gray-500);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .modal-close:hover {
+            background: var(--gray-200);
+        }
+
+        .modal h3 {
+            font-size: 17px;
+            margin-bottom: 16px;
+            padding-right: 24px;
+        }
+
+        .modal .input-group {
+            margin-bottom: 12px;
+        }
+
+        .modal input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .modal input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        .modal .modal-hint {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--primary);
+            background: var(--primary-bg);
+            border: 1px solid var(--primary-light);
+            border-radius: 4px;
+            cursor: pointer;
+            vertical-align: middle;
+            transition: background 0.15s;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-light);
+        }
+
+        .modal .modal-error {
+            font-size: 13px;
+            color: var(--error);
+            margin-top: 8px;
+            display: none;
+        }
+
+        .modal .modal-error.show {
+            display: block;
+        }
+
+        /* ========== Toast 提示 ========== */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 2000;
+            transition: transform 0.3s ease;
+            white-space: nowrap;
+            box-shadow: var(--shadow-md);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast-error {
+            background: var(--error-bg);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .toast-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (min-width: 640px) {
+            .app {
+                padding-top: 40px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .comparison {
+                flex-direction: row;
+                align-items: flex-start;
+                padding: 20px;
+            }
+
+            .compare-arrow {
+                padding: 60px 8px 0;
+            }
+
+            /* PC端横向排列时箭头朝右 */
+            .compare-arrow .arrow-down { display: none; }
+            .compare-arrow .arrow-right { display: inline; }
+
+            .compare-item .preview-img {
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>小像压缩</h1>
+            <p class="subtitle">报名照片专用 · 本地处理不上传</p>
+        </header>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <span class="status-badge free" id="statusBadge"></span>
+        </div>
+
+        <!-- 上传区 -->
+        <section class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept="image/jpeg,image/png">
+                <span class="upload-icon">📷</span>
+                <p class="upload-text">点击或拖拽上传照片</p>
+                <p class="upload-hint">支持 JPG、PNG 格式</p>
+            </div>
+        </section>
+
+        <!-- 加载中 -->
+        <section class="loading-section" id="loadingSection">
+            <div class="spinner"></div>
+            <p class="loading-text">处理中...</p>
+        </section>
+
+        <!-- 结果区 -->
+        <section class="result-section" id="resultSection">
+            <div class="comparison">
+                <div class="compare-item">
+                    <p class="compare-label">原图</p>
+                    <img class="preview-img" id="originalPreview" alt="原图预览">
+                    <div class="info">
+                        <div><span class="size" id="originalSize"></span></div>
+                        <div id="originalDimensions"></div>
+                    </div>
+                </div>
+                <div class="compare-arrow"><span class="arrow-down">↓</span><span class="arrow-right">→</span></div>
+                <div class="compare-item">
+                    <p class="compare-label">压缩后</p>
+                    <img class="preview-img" id="compressedPreview" alt="压缩后预览">
+                    <div class="info">
+                        <div><span class="size" id="compressedSize"></span></div>
+                        <div>413 × 626 px</div>
+                    </div>
+                    <div class="reduction-badge" id="reductionBadge"></div>
+                </div>
+            </div>
+            <div class="warning-msg" id="oversizeWarning">⚠️ 已尽力压缩，但文件仍超过 200KB，建议更换更小的原图</div>
+            <div class="download-area">
+                <button class="btn btn-success btn-block" id="downloadBtn">⬇ 下载压缩后的照片</button>
+            </div>
+        </section>
+
+        <!-- 付费引导区 -->
+        <section class="payment-section" id="paymentSection">
+            <div class="payment-card">
+                <h3>解锁完整功能</h3>
+                <ul class="features">
+                    <li>无限次使用</li>
+                    <li>无水印导出</li>
+                    <li>批量处理（即将推出）</li>
+                </ul>
+                <div class="price">¥1</div>
+                <p class="price-hint">一次购买，永久使用</p>
+                <button class="btn btn-primary btn-block" id="unlockBtn">解锁无限次</button>
+            </div>
+        </section>
+
+        <!-- 底部说明 -->
+        <footer class="footer">
+            <p>上传照片后自动压缩为 413×626 像素、≤200KB 的 JPG 格式</p>
+            <div class="divider"></div>
+            <p>🔒 所有处理均在本地浏览器完成，照片不会上传到任何服务器</p>
+            <p style="margin-top:8px;">© 2024 小像压缩</p>
+        </footer>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <button class="modal-close" id="modalClose">×</button>
+            <h3 id="modalTitle">解锁无限次</h3>
+            <p class="modal-hint" id="modalHint">
+                微信扫码支付 1 元，添加微信号 <strong>latercome</strong><button class="copy-btn" onclick="copyWechat()">复制</button> 获取激活码。
+                <br>激活码永久有效，清除浏览器缓存后需重新输入，建议截图保存。
+            </p>
+            <div class="input-group">
+                <input type="text" id="codeInput" placeholder="请输入激活码">
+            </div>
+            <p class="modal-error" id="modalError">激活码错误，请重新输入</p>
+            <button class="btn btn-primary btn-block" id="activateBtn">激活</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /** 目标输出尺寸 */
+        const TARGET_W = 413;
+        const TARGET_H = 626;
+        const TARGET_SIZE_KB = 200;
+        const FREE_DAILY_LIMIT = 3;
+        const VALID_HASHES = [
+            '6adae59b9082f47979ebd896233b8cd570bdac42ff0c5b995a76a7f0796bc18b',
+            '0a5474ee976e1cb15dc8fd94ded5ea9f36b9a051d6e4bc5de443c39529f9d6a0',
+            '8e392ee236f6604822fb37bb72459acf7d21e6c02a983d22c4e23b3481a8bcee',
+            'f99106ce0a5d075e1e007488509166bf9fd0db91903d250e02c2c0c2eb5a3f60',
+            '923062377e03f88352ab9e8859c2a6bcd99f53621672c506d4109cc01649f3e2',
+            '0e550a7ea43991f7008aa8977c939a7fe1d9c2e6af19d1202a8561d20480af1b',
+            '2fffef1f5d3f2ddf36107adb32dd1904f2ef32456c13e9d30d784ddab1dd2f11',
+            '64e46a9bebe6395270d7c441e35f24fa1d56d689d4d207885116c6ee233fe726',
+            '4a1fd7c8c245e71a135e3d19f715011c8e83d35396cbfb02b1719e18a32a1bfe',
+            'a2ef6d1c9184d1cacadf8b88a2d2f7ff9510694c403b3a6031c5b1a44b6cc219',
+            'ddfb007da2655b89491859b754f76b8cfa8c20504f8e06242994f3c5eb4127ca',
+            '68dd08055734eedf98197234399c11403f02d874abd020b614e67074845906ab',
+            '2a216294e93937794c5245969a7a21b2ed2567154b472fc010c83806171cc1d1',
+            'c36a42d668dc00cffbe3d619f44d386b6563a17e156f6a6325f9e017151e3033',
+            'e4d8c1d10e5cdd73c2aa9238fce66434fb5f8a908c32a5f34c88a14cfc4b3931',
+            '59a57e92b97ce6ecfdb6ce79b1624d001992674248a572c54ae7c73ac4ae344a',
+            'aa961002552d4706c625bdc8e1e67efa26908b6ef332415cc566ec8bd6e35f75',
+            '94c7a1789b01bb3bb93030c1d0ab86581fe537197d38af9b667ef3bd77c24ffa',
+            'c2ef272ca5a64e65e061e253414a86fc1694e0ef9bb660781aa049f614fc5682',
+            '3598ae3524cf13f66a5edcb3c7c9b795499d47b31dfa5e799cc843a4481c012d'
+        ];
+
+        /* ========== DOM 引用 ========== */
+        const $ = (id) => document.getElementById(id);
+        const statusBadge = $('statusBadge');
+        const uploadArea = $('uploadArea');
+        const fileInput = $('fileInput');
+        const loadingSection = $('loadingSection');
+        const resultSection = $('resultSection');
+        const originalPreview = $('originalPreview');
+        const compressedPreview = $('compressedPreview');
+        const originalSize = $('originalSize');
+        const originalDimensions = $('originalDimensions');
+        const compressedSize = $('compressedSize');
+        const reductionBadge = $('reductionBadge');
+        const oversizeWarning = $('oversizeWarning');
+        const downloadBtn = $('downloadBtn');
+        const paymentSection = $('paymentSection');
+        const unlockBtn = $('unlockBtn');
+        const modalOverlay = $('modalOverlay');
+        const modalClose = $('modalClose');
+        const modalTitle = $('modalTitle');
+        const modalHint = $('modalHint');
+        const codeInput = $('codeInput');
+        const modalError = $('modalError');
+        const activateBtn = $('activateBtn');
+        const toastEl = $('toast');
+
+        /** 缓存当前压缩结果的 Object URL，切换时需释放 */
+        let currentBlobUrl = null;
+        let currentOriginalUrl = null;
+        let currentBlob = null;
+        let currentFileName = '';
+
+        /* ========== localStorage 状态管理 ========== */
+
+        /**
+         * @returns {boolean} 用户是否已付费
+         */
+        function isPaid() {
+            return localStorage.getItem('is_paid') === 'true';
+        }
+
+        /**
+         * @returns {number} 今日剩余免费次数
+         */
+        function getRemainingCount() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('last_compress_date');
+            if (lastDate !== today) return FREE_DAILY_LIMIT;
+            const used = parseInt(localStorage.getItem('compress_count') || '0', 10);
+            return Math.max(0, FREE_DAILY_LIMIT - used);
+        }
+
+        /**
+         * 消耗一次免费次数
+         */
+        function incrementCount() {
+            const today = new Date().toDateString();
+            const lastDate = localStorage.getItem('last_compress_date');
+            if (lastDate !== today) {
+                localStorage.setItem('compress_count', '1');
+                localStorage.setItem('last_compress_date', today);
+            } else {
+                const count = parseInt(localStorage.getItem('compress_count') || '0', 10);
+                localStorage.setItem('compress_count', String(count + 1));
+            }
+        }
+
+        /**
+         * 对字符串做 SHA-256 哈希（使用浏览器原生 Web Crypto API）
+         * @param {string} str
+         * @returns {Promise<string>} hex 格式的哈希值
+         */
+        async function sha256(str) {
+            var buf = new TextEncoder().encode(str);
+            var hash = await crypto.subtle.digest('SHA-256', buf);
+            return Array.from(new Uint8Array(hash)).map(function (b) {
+                return b.toString(16).padStart(2, '0');
+            }).join('');
+        }
+
+        /**
+         * @param {string} code 用户输入的激活码
+         * @returns {Promise<boolean>} 激活是否成功
+         */
+        async function activate(code) {
+            var input = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            /* 自动补横杠，兼容用户粘贴时带不带横杠 */
+            var normalized = input.replace(/(.{4})(?=.)/g, '$1-');
+            var hash = await sha256(normalized);
+            if (VALID_HASHES.indexOf(hash) !== -1) {
+                localStorage.setItem('is_paid', 'true');
+                return true;
+            }
+            return false;
+        }
+
+        /* ========== UI 更新 ========== */
+
+        /** 刷新状态栏显示 */
+        function updateStatusBar() {
+            if (isPaid()) {
+                statusBadge.className = 'status-badge paid';
+                statusBadge.textContent = '✓ 已解锁 · 无限次';
+            } else {
+                const remaining = getRemainingCount();
+                statusBadge.className = 'status-badge free';
+                statusBadge.textContent = '今日免费剩余 ' + remaining + ' / ' + FREE_DAILY_LIMIT + ' 次';
+            }
+        }
+
+        /** 刷新付费引导区 */
+        function updatePaymentSection() {
+            if (isPaid()) {
+                unlockBtn.textContent = '✓ 已解锁';
+                unlockBtn.disabled = true;
+            } else {
+                unlockBtn.textContent = '解锁无限次';
+                unlockBtn.disabled = false;
+            }
+        }
+
+        /**
+         * @param {string} message 提示内容
+         * @param {'error'|'success'} type 提示类型
+         */
+        function showToast(message, type) {
+            toastEl.textContent = message;
+            toastEl.className = 'toast toast-' + type + ' show';
+            clearTimeout(toastEl._timer);
+            toastEl._timer = setTimeout(function () {
+                toastEl.classList.remove('show');
+            }, 3000);
+        }
+
+        /** @type {string} 弹窗默认引导文案 */
+        var defaultHint = '微信扫码支付 1 元，添加微信号 <strong>latercome</strong><button class="copy-btn" onclick="copyWechat()">复制</button> 获取激活码。' +
+            '<br>激活码永久有效，清除浏览器缓存后需重新输入，建议截图保存。';
+
+        /** 显示弹窗 */
+        function showModal(title, hint) {
+            modalTitle.textContent = title || '解锁无限次';
+            modalHint.innerHTML = hint || defaultHint;
+            modalError.classList.remove('show');
+            codeInput.value = '';
+            modalOverlay.classList.add('show');
+        }
+
+        /** 关闭弹窗 */
+        function hideModal() {
+            modalOverlay.classList.remove('show');
+        }
+
+        /**
+         * @param {number} bytes 字节数
+         * @returns {string} 格式化的文件大小
+         */
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        /** 释放旧的预览 Object URL 防止内存泄漏 */
+        function revokeOldUrls() {
+            if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+            if (currentOriginalUrl) { URL.revokeObjectURL(currentOriginalUrl); currentOriginalUrl = null; }
+        }
+
+        /* ========== 图片处理核心 ========== */
+
+        /**
+         * 居中裁剪并绘制到 Canvas（cover 模式）
+         * @param {HTMLImageElement} img 已加载的图片元素
+         * @param {HTMLCanvasElement} canvas 目标 Canvas
+         */
+        function drawCropped(img, canvas) {
+            const targetRatio = TARGET_W / TARGET_H;
+            const imgRatio = img.naturalWidth / img.naturalHeight;
+
+            var sx, sy, sw, sh;
+            if (imgRatio > targetRatio) {
+                sh = img.naturalHeight;
+                sw = sh * targetRatio;
+                sx = (img.naturalWidth - sw) / 2;
+                sy = 0;
+            } else {
+                sw = img.naturalWidth;
+                sh = sw / targetRatio;
+                sx = 0;
+                sy = (img.naturalHeight - sh) / 2;
+            }
+
+            canvas.width = TARGET_W;
+            canvas.height = TARGET_H;
+            var ctx = canvas.getContext('2d');
+            /* PNG 透明区域转白底 */
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+        }
+
+        /**
+         * 免费版水印
+         * @param {HTMLCanvasElement} canvas
+         */
+        function addWatermark(canvas) {
+            var ctx = canvas.getContext('2d');
+            ctx.font = '12px sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('由小像压缩处理', canvas.width - 10, canvas.height - 10);
+        }
+
+        /**
+         * 将 Canvas 转为 Blob（Promise 封装）
+         * @param {HTMLCanvasElement} canvas
+         * @param {string} type MIME 类型
+         * @param {number} quality 压缩质量 0-1
+         * @returns {Promise<Blob>}
+         */
+        function canvasToBlob(canvas, type, quality) {
+            return new Promise(function (resolve, reject) {
+                canvas.toBlob(function (blob) {
+                    if (blob) { resolve(blob); } else { reject(new Error('Blob 创建失败')); }
+                }, type, quality);
+            });
+        }
+
+        /**
+         * 二分查找最优 JPEG 质量，使输出 ≤ targetSizeKB 且质量尽可能高
+         * @param {HTMLCanvasElement} canvas
+         * @param {number} [targetSizeKB=200]
+         * @returns {Promise<{blob: Blob, oversize: boolean}>}
+         */
+        async function findOptimalQuality(canvas, targetSizeKB) {
+            targetSizeKB = targetSizeKB || TARGET_SIZE_KB;
+            var minQ = 0.1, maxQ = 1.0;
+            var bestBlob = null;
+
+            for (var i = 0; i < 7; i++) {
+                var q = (minQ + maxQ) / 2;
+                var blob = await canvasToBlob(canvas, 'image/jpeg', q);
+                if (blob.size <= targetSizeKB * 1024) {
+                    bestBlob = blob;
+                    minQ = q;
+                } else {
+                    maxQ = q;
+                }
+                if (maxQ - minQ < 0.01) break;
+            }
+
+            if (!bestBlob) {
+                bestBlob = await canvasToBlob(canvas, 'image/jpeg', 0.1);
+            }
+
+            return { blob: bestBlob, oversize: bestBlob.size > targetSizeKB * 1024 };
+        }
+
+        /**
+         * 主压缩流程：加载图片 → 裁剪 → 水印 → 压缩 → 显示结果
+         * @param {File} file 用户上传的文件
+         */
+        async function compressImage(file) {
+            revokeOldUrls();
+            resultSection.classList.remove('show');
+            loadingSection.classList.add('show');
+
+            try {
+                var img = await loadImage(file);
+
+                var canvas = document.createElement('canvas');
+                drawCropped(img, canvas);
+
+                if (!isPaid()) {
+                    addWatermark(canvas);
+                }
+
+                var result = await findOptimalQuality(canvas);
+
+                /* 更新原图预览 */
+                currentOriginalUrl = URL.createObjectURL(file);
+                originalPreview.src = currentOriginalUrl;
+                originalSize.textContent = formatSize(file.size);
+                originalDimensions.textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' px';
+
+                /* 更新压缩后预览 */
+                currentBlob = result.blob;
+                currentBlobUrl = URL.createObjectURL(result.blob);
+                compressedPreview.src = currentBlobUrl;
+                compressedSize.textContent = formatSize(result.blob.size);
+
+                /* 压缩率 */
+                var reduced = Math.round((1 - result.blob.size / file.size) * 100);
+                reductionBadge.textContent = '减少 ' + Math.max(reduced, 0) + '%';
+
+                /* 超标警告 */
+                if (result.oversize) {
+                    oversizeWarning.classList.add('show');
+                } else {
+                    oversizeWarning.classList.remove('show');
+                }
+
+                /* 保存原始文件名用于下载 */
+                var baseName = file.name.replace(/\.[^.]+$/, '');
+                currentFileName = baseName + '_compressed.jpg';
+
+                /* 计数（压缩成功后才扣次数） */
+                if (!isPaid()) {
+                    incrementCount();
+                    updateStatusBar();
+                }
+
+                loadingSection.classList.remove('show');
+                resultSection.classList.add('show');
+            } catch (e) {
+                loadingSection.classList.remove('show');
+                showToast('处理失败，请重试', 'error');
+            }
+        }
+
+        /**
+         * 加载图片文件为 HTMLImageElement
+         * @param {File} file
+         * @returns {Promise<HTMLImageElement>}
+         */
+        function loadImage(file) {
+            return new Promise(function (resolve, reject) {
+                var img = new Image();
+                var url = URL.createObjectURL(file);
+                img.onload = function () {
+                    URL.revokeObjectURL(url);
+                    resolve(img);
+                };
+                img.onerror = function () {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('图片加载失败'));
+                };
+                img.src = url;
+            });
+        }
+
+        /* ========== 文件处理入口 ========== */
+
+        /**
+         * 处理用户选择的文件：校验格式和次数，通过后压缩
+         * @param {File} file
+         */
+        function handleFile(file) {
+            if (!file) return;
+
+            var validTypes = ['image/jpeg', 'image/png'];
+            if (validTypes.indexOf(file.type) === -1) {
+                showToast('不支持该格式，请上传 JPG 或 PNG 图片', 'error');
+                fileInput.value = '';
+                return;
+            }
+
+            if (!isPaid() && getRemainingCount() <= 0) {
+                showModal(
+                    '今日免费次数已用完',
+                    '1 元永久解锁 <strong>无限次 + 无水印 + 批量处理</strong><br>' +
+                    '微信添加 <strong>latercome</strong><button class="copy-btn" onclick="copyWechat()">复制</button> 获取激活码。<br>' +
+                    '激活码永久有效，清除浏览器缓存后需重新输入，建议截图保存。'
+                );
+                fileInput.value = '';
+                return;
+            }
+
+            compressImage(file);
+        }
+
+        /* ========== 事件绑定 ========== */
+
+        fileInput.addEventListener('change', function (e) {
+            var file = e.target.files && e.target.files[0];
+            handleFile(file);
+            fileInput.value = '';
+        });
+
+        /* 拖拽上传 */
+        uploadArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function () {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            var file = e.dataTransfer.files && e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        /* 下载 */
+        downloadBtn.addEventListener('click', function () {
+            if (!currentBlob) return;
+            var a = document.createElement('a');
+            a.href = currentBlobUrl;
+            a.download = currentFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        /* 付费弹窗 */
+        unlockBtn.addEventListener('click', function () {
+            showModal();
+        });
+
+        modalClose.addEventListener('click', hideModal);
+
+        modalOverlay.addEventListener('click', function (e) {
+            if (e.target === modalOverlay) hideModal();
+        });
+
+        /* 激活码提交 */
+        activateBtn.addEventListener('click', async function () {
+            var code = codeInput.value;
+            if (await activate(code)) {
+                hideModal();
+                updateStatusBar();
+                updatePaymentSection();
+                showToast('激活成功，已解锁全部功能！', 'success');
+            } else {
+                modalError.classList.add('show');
+            }
+        });
+
+        /* 回车提交激活码 */
+        codeInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') activateBtn.click();
+        });
+
+        /* ========== 初始化 ========== */
+        updateStatusBar();
+        updatePaymentSection();
+
+        /**
+         * 复制微信号到剪贴板（挂到 window 供 onclick 调用）
+         */
+        /**
+         * execCommand 降级复制，兼容微信浏览器和 file:// 协议
+         * @param {string} text
+         * @returns {boolean}
+         */
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;left:-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
+            document.body.removeChild(ta);
+            return ok;
+        }
+
+        window.copyWechat = function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText('latercome').then(function () {
+                    showToast('微信号已复制，请打开微信粘贴搜索', 'success');
+                }).catch(function () {
+                    if (fallbackCopy('latercome')) {
+                        showToast('微信号已复制，请打开微信粘贴搜索', 'success');
+                    } else {
+                        showToast('请手动添加微信号：latercome', 'error');
+                    }
+                });
+            } else {
+                if (fallbackCopy('latercome')) {
+                    showToast('微信号已复制，请打开微信粘贴搜索', 'success');
+                } else {
+                    showToast('请手动添加微信号：latercome', 'error');
+                }
+            }
+        };
+    })();
+    </script>
+</body>
+</html>
